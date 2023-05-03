@@ -33,7 +33,7 @@ Make sure to copy the ```.env.example``` file to ```.env``` and tailor it to fit
 npm run start
 ```
 
-5. The server is now running on http://localhost:{SPECIFIED PORT}.
+5. The server is now running on http://localhost:{DECOMPRESSOR_PORT}.
 
 ## Usage
 
