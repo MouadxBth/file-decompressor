@@ -1,3 +1,11 @@
 package-lock.json
 node_modules/
+build/
+backup/
 .env
+*.zip
+*.7z
+*.gz
+*.rar
+*.tar
+vercel.json

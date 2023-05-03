@@ -7,7 +7,7 @@ import { resolve } from "path";
 
 interface DecompressedFile {
 	fileName: string,
-	content: Buffer;
+	fileContent: string;
 }
 
 async function fetchDecompressedFiles(directoryPath: string): Promise<DecompressedFile[]> {
@@ -23,7 +23,7 @@ async function fetchDecompressedFiles(directoryPath: string): Promise<Decompress
 
 			files[index++] = {
 				fileName: fileName,
-				content: fileContent
+				fileContent: fileContent.toString('base64')
 			};
 		}
 	} catch (err) {
@@ -36,6 +36,8 @@ async function fetchDecompressedFiles(directoryPath: string): Promise<Decompress
 async function decompressFileTo(filePath: string): Promise<void> {
 	const extension = path.extname(filePath).toLowerCase();
 	const outputPath = path.join(path.dirname(filePath), path.basename(filePath, extension)).replace('.', '-');
+
+	console.log(`PATH ${outputPath}`);
 
 	switch (extension) {
 		case ".zip":
