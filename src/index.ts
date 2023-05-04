@@ -57,7 +57,7 @@ app.post(DECOMPRESSOR_ROUTE, async (request: Request, response: Response) => {
 
 		decompressFile({
 			fileName: request.body['fileName'],
-			fileContent: Buffer.from(request.body['fileContent'], "base64")
+			fileContent: request.body['fileContent']
 		})
 		.then((result) => {
 			return response.send(result);

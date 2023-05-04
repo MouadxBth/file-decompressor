@@ -6,7 +6,7 @@ import admZip from "adm-zip";
 // Defines a signature for the decompressed file JSON objects
 interface FileData {
 	fileName: string,
-	fileContent: Buffer;
+	fileContent: string;
 }
 
 /**
@@ -27,7 +27,7 @@ async function fetchFileDatas(directoryPath: string): Promise<FileData[]> {
 
 			files[index++] = {
 				fileName: fileName,
-				fileContent: fileContent
+				fileContent: fileContent.toString('base64')
 			};
 		}
 	} catch (err) {
@@ -51,7 +51,7 @@ async function decompressFileTo(file: FileData): Promise<void> {
 
 	switch (extension) {
 		case ".zip":
-			new admZip(file.fileContent).extractAllTo(outputPath, true);
+			new admZip(Buffer.from(file.fileContent, "base64")).extractAllTo(outputPath, true);
 			break ;
 /* 		case ".rar":
 		case ".7z":
@@ -85,7 +85,7 @@ export async function decompressFile(file: FileData): Promise<FileData[]> {
 
 	const outputPath = "/tmp/" + file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
 		.replace('.', '-'));
-		
+
 	const files = await fetchFileDatas(outputPath);
 
 	return new Promise((resolve) => {

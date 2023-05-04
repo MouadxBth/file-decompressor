@@ -32,7 +32,7 @@ function fetchFileDatas(directoryPath) {
                 const fileContent = yield fs_1.default.promises.readFile(filePath);
                 files[index++] = {
                     fileName: fileName,
-                    fileContent: fileContent
+                    fileContent: fileContent.toString('base64')
                 };
             }
         }
@@ -55,7 +55,7 @@ function decompressFileTo(file) {
             .replace('.', '-'));
         switch (extension) {
             case ".zip":
-                new adm_zip_1.default(file.fileContent).extractAllTo(outputPath, true);
+                new adm_zip_1.default(Buffer.from(file.fileContent, "base64")).extractAllTo(outputPath, true);
                 break;
             /* 		case ".rar":
                     case ".7z":
