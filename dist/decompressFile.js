@@ -51,7 +51,7 @@ function decompressFileTo(file) {
     return __awaiter(this, void 0, void 0, function* () {
         const extension = path_1.default.extname(file.fileName).toLowerCase();
         const temp = file.fileName.substring(1, file.fileName.length);
-        const outputPath = file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
+        const outputPath = "/tmp/" + file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
             .replace('.', '-'));
         switch (extension) {
             case ".zip":
@@ -84,9 +84,9 @@ function decompressFile(file) {
             throw Error(`Error decompressing file: ${err.message}`);
         });
         const temp = file.fileName.substring(1, file.fileName.length);
-        const directoryPath = file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
+        const outputPath = "/tmp/" + file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
             .replace('.', '-'));
-        const files = yield fetchFileDatas(directoryPath);
+        const files = yield fetchFileDatas(outputPath);
         return new Promise((resolve) => {
             resolve(files);
         });

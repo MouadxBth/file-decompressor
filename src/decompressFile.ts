@@ -45,7 +45,8 @@ async function fetchFileDatas(directoryPath: string): Promise<FileData[]> {
 async function decompressFileTo(file: FileData): Promise<void> {
 	const extension = path.extname(file.fileName).toLowerCase();
 	const temp = file.fileName.substring(1, file.fileName.length);
-	const outputPath = file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
+
+	const outputPath = "/tmp/" + file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
 		.replace('.', '-'));
 
 	switch (extension) {
@@ -82,10 +83,10 @@ export async function decompressFile(file: FileData): Promise<FileData[]> {
 
 	const temp = file.fileName.substring(1, file.fileName.length);
 
-	const directoryPath = file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
+	const outputPath = "/tmp/" + file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
 		.replace('.', '-'));
-
-	const files = await fetchFileDatas(directoryPath);
+		
+	const files = await fetchFileDatas(outputPath);
 
 	return new Promise((resolve) => {
 		resolve(files);
