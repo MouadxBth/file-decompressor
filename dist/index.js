@@ -14,8 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv").config();
 const express_1 = __importDefault(require("express"));
-const path_1 = __importDefault(require("path"));
-const multer_1 = __importDefault(require("multer"));
 const decompressFile_1 = require("./decompressFile");
 /**
  * Configuration variables for the decompression server.
@@ -31,38 +29,8 @@ const decompressFile_1 = require("./decompressFile");
  */
 const DECOMPRESSOR_PORT = process.env.DECOMPRESSOR_PORT ? parseInt(process.env.DECOMPRESSOR_PORT) : 3000;
 const DECOMPRESSOR_ROUTE = process.env.DECOMPRESSOR_ROUTE || "/upload";
-const DECOMPRESSOR_DIR = process.env.DECOMPRESSOR_DIR || "/tmp";
-const DECOMPRESSOR_BACKUP_DIR = process.env.DECOMPRESSOR_BACKUP_DIR || "./backup";
-/**
- * Creates an instance of the multer middleware configured to accept only compressed files.
- * The middleware saves the file in the directory specified in the DECOMPRESSOR_DIR variable.
- * The name of the file is a combination of the current timestamp and the original file name.
- *
- * @constant {object} upload - An instance of the multer middleware configured to accept compressed files.
- * @memberof module:server
- */
-const upload = (0, multer_1.default)({
-    storage: multer_1.default.diskStorage({
-        destination: function (req, file, callback) {
-            callback(null, DECOMPRESSOR_DIR);
-        },
-        filename: (req, file, callback) => {
-            callback(null, `${Date.now()}-${file.originalname}`);
-        }
-    }),
-    fileFilter: function (req, file, callback) {
-        const extension = path_1.default.extname(file.originalname);
-        if (extension === '.zip'
-            || extension === '.gz'
-            || extension === '.tar'
-            || extension === '.tar'
-            || extension === '.rar'
-            || extension === '.7z') {
-            return callback(null, true);
-        }
-        return callback(new Error('Only compressed files are allowed'));
-    }
-}).single('file');
+const DECOMPRESSOR_DIR = process.env.DECOMPRESSOR_DIR || "/tmp"; // DEPRACATED
+const DECOMPRESSOR_BACKUP_DIR = process.env.DECOMPRESSOR_BACKUP_DIR || "./backup"; // DEPRACATED
 /**
  * Creates an instance of the express app with body-parser middleware enabled for JSON and urlencoded bodies.
  * The server listens on the port specified in the DECOMPRESSOR_PORT variable.
@@ -71,22 +39,42 @@ const upload = (0, multer_1.default)({
  * @memberof module:server
  */
 const app = (0, express_1.default)();
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
-app.post(DECOMPRESSOR_ROUTE, (request, response) => {
-    upload(request, response, (error) => __awaiter(void 0, void 0, void 0, function* () {
-        if (error || !request.file) {
-            return (console.error(error), response.status(400).send({ error: error ? error.message : 'No file uploaded' }));
-        }
+app.use(express_1.default.json({
+    verify: (request, response, buffer, encoding) => {
         try {
-            const data = yield (0, decompressFile_1.decompressFile)(request.file.path, DECOMPRESSOR_BACKUP_DIR);
-            return response.send(data);
+            JSON.parse(buffer.toString('utf-8'));
         }
-        catch (decompressionError) {
-            return response.status(500).send(decompressionError);
+        catch (error) {
+            response.status(400).send("Invalid JSON body!\n \
+			an example of a valid Request:\n{ \"fileName\": \"test.txt\", \"fileContent\": \"content in base64\" }");
+            throw Error("Invalid request body!");
         }
-    }));
-});
+    }
+}));
+app.use(express_1.default.urlencoded({ extended: true }));
+app.post(DECOMPRESSOR_ROUTE, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const fileName = request.body['fileName'];
+        const fileContentString = request.body['fileContent'];
+        if (fileName == null || fileName.length == 0
+            || fileContentString == null || fileContentString.length == 0) {
+            return response.status(400).send("Error! fileName and fileContent are either missing or empty!");
+        }
+        (0, decompressFile_1.decompressFile)({
+            fileName: request.body['fileName'],
+            fileContent: Buffer.from(request.body['fileContent'], "base64")
+        })
+            .then((result) => {
+            return response.send(result);
+        })
+            .catch((error) => {
+            return response.status(500).send(error.message);
+        });
+    }
+    catch (decompressionError) {
+        return response.status(500).send(decompressionError);
+    }
+}));
 app.listen(DECOMPRESSOR_PORT, () => {
     console.log(`Server started on port ${DECOMPRESSOR_PORT}`);
 });

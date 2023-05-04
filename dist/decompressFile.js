@@ -15,11 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.decompressFile = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const zlib_1 = __importDefault(require("zlib"));
 const adm_zip_1 = __importDefault(require("adm-zip"));
-const node_7z_1 = __importDefault(require("node-7z"));
-const path_2 = require("path");
-function fetchDecompressedFiles(directoryPath) {
+/**
+ * Fetches the list of files in a directory and returns them as an array of FileData objects
+ * @param directoryPath - The path of the directory to fetch the files from
+ * @returns An array of FileData objects
+ */
+function fetchFileDatas(directoryPath) {
     return __awaiter(this, void 0, void 0, function* () {
         const files = [];
         let index = 0;
@@ -30,7 +32,7 @@ function fetchDecompressedFiles(directoryPath) {
                 const fileContent = yield fs_1.default.promises.readFile(filePath);
                 files[index++] = {
                     fileName: fileName,
-                    fileContent: fileContent.toString('base64')
+                    fileContent: fileContent
                 };
             }
         }
@@ -40,72 +42,51 @@ function fetchDecompressedFiles(directoryPath) {
         return files;
     });
 }
-function decompressFileTo(filePath) {
+/**
+ * Decompresses the given file asynchrounously based on it's extension
+ * @param filePath - The path of the compressed file
+ * @returns A void promise to track the decompression status
+ */
+function decompressFileTo(file) {
     return __awaiter(this, void 0, void 0, function* () {
-        const extension = path_1.default.extname(filePath).toLowerCase();
-        const outputPath = path_1.default.join(path_1.default.dirname(filePath), path_1.default.basename(filePath, extension)).replace('.', '-');
-        console.log(`PATH ${outputPath}`);
+        const extension = path_1.default.extname(file.fileName).toLowerCase();
+        const temp = file.fileName.substring(1, file.fileName.length);
+        const outputPath = file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
+            .replace('.', '-'));
         switch (extension) {
             case ".zip":
-            case ".rar":
-            case ".7z":
-            case ".tar":
-            case ".tgz":
-                if (extension == ".zip")
-                    new adm_zip_1.default(filePath).extractAllTo(outputPath, true);
-                else
-                    node_7z_1.default.extractFull(filePath, outputPath)
-                        .on('end', path_2.resolve);
+                new adm_zip_1.default(file.fileContent).extractAllTo(outputPath, true);
                 break;
-            case ".gz":
-                const fileName = path_1.default.basename(filePath, extension);
-                yield fs_1.default.promises.mkdir(outputPath, { recursive: true });
-                const gunzip = zlib_1.default.createGunzip();
-                const gzipInput = fs_1.default.createReadStream(filePath);
-                const gzipOutput = fs_1.default.createWriteStream(path_1.default.join(outputPath, fileName));
-                yield new Promise((resolve, reject) => {
-                    gzipInput.pipe(gunzip).pipe(gzipOutput)
-                        .on("error", reject)
-                        .on("finish", resolve);
-                });
-                break;
+            /* 		case ".rar":
+                    case ".7z":
+                    case ".tar":
+                    case ".tgz":
+                    case ".gz": */
             default:
                 throw new Error(`Unsupported file format: ${extension}`);
         }
     });
 }
-function moveFile(sourceFilePath, destFolderPath) {
+/**
+ * Decompresses the given file in it's appropriate folder, then moves the file from it's location to
+ * the backup location, then returns an promise of an array of decompressed files.
+ * @param filePath - The path of the compressed file
+ * @param backupPath - The path of the directory to move the compressed file after decompression
+ * @returns A promise of an array of FileData objects
+ */
+function decompressFile(file) {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield fs_1.default.promises.mkdir(destFolderPath, { recursive: true });
-            const fileName = path_1.default.basename(sourceFilePath);
-            const sourceFileExists = yield fs_1.default.promises.stat(sourceFilePath)
-                .then(stat => stat.isFile())
-                .catch(() => false);
-            if (!sourceFileExists) {
-                console.error(`Error moving file: source file does not exist: ${sourceFilePath}`);
-                return;
-            }
-            const destFilePath = path_1.default.join(destFolderPath, fileName);
-            yield fs_1.default.promises.rename(sourceFilePath, destFilePath);
-        }
-        catch (error) {
-            console.error(`Error moving file: ${error.message}`);
-        }
-    });
-}
-function decompressFile(filePath, backupPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield decompressFileTo(filePath)
+        yield decompressFileTo(file)
             .then(() => {
             console.log("Files decompressed successfully!");
         })
-            .catch((err) => console.error(`Error decompressing file: ${err.message}`));
-        const temp = filePath.substring(1, filePath.length);
-        const directoryPath = filePath.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
+            .catch((err) => {
+            throw Error(`Error decompressing file: ${err.message}`);
+        });
+        const temp = file.fileName.substring(1, file.fileName.length);
+        const directoryPath = file.fileName.substring(0, 1) + (temp.substring(0, temp.lastIndexOf('.'))
             .replace('.', '-'));
-        const files = yield fetchDecompressedFiles(directoryPath);
-        moveFile(filePath, backupPath);
+        const files = yield fetchFileDatas(directoryPath);
         return new Promise((resolve) => {
             resolve(files);
         });
