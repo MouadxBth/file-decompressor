@@ -61,7 +61,7 @@ app.post(DECOMPRESSOR_ROUTE, (request, response) => __awaiter(void 0, void 0, vo
             return response.status(400).send("Error! fileName and fileContent are either missing or empty!");
         }
         (0, decompressFile_1.decompressFile)({
-            fileName: request.body['fileName'],
+            fileName: "/tmp/" + request.body['fileName'],
             fileContent: Buffer.from(request.body['fileContent'], "base64")
         })
             .then((result) => {
